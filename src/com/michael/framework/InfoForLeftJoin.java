@@ -12,23 +12,23 @@ import java.lang.reflect.Field;
  * @author michael
  */
 public class InfoForLeftJoin {
-    Class clazz;
+    Class<?> clazz;
     Object instance;
     Object instanceConteneur;
     Field fieldConteneur;
 
-    public InfoForLeftJoin(Class clazz, Object instance, Object instanceConteneur, Field fieldConteneur) {
+    public InfoForLeftJoin(Class<?> clazz, Object instance, Object instanceConteneur, Field fieldConteneur) {
         this.clazz = clazz;
         this.instance = instance;
         this.instanceConteneur = instanceConteneur;
         this.fieldConteneur = fieldConteneur;
     }
 
-    public Class getClazz() {
+    public Class<?> getClazz() {
         return clazz;
     }
 
-    public void setClazz(Class clazz) {
+    public void setClazz(Class<?> clazz) {
         this.clazz = clazz;
     }
 

@@ -11,8 +11,13 @@ package com.michael.framework.exception;
  */
 public class DatabaseNotSupportedException extends RuntimeException {
 
+    /**
+     *
+     */
+    private static final long serialVersionUID = 1L;
+
     public DatabaseNotSupportedException(String baseDeDonnees) {
         super("La base de donnée " + baseDeDonnees + " n'est pas supportée.");
     }
-    
+
 }

@@ -10,7 +10,12 @@ package com.michael.framework;
  * @author michael
  */
 public class NotCachedException extends Exception {
-    public NotCachedException(Class clazz) {
+    /**
+     *
+     */
+    private static final long serialVersionUID = 1L;
+
+    public NotCachedException(Class<?> clazz) {
         super("La classe " + clazz + " n'as pas été enregistré dans le cache.");
     }
 }

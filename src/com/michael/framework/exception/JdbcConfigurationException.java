@@ -10,6 +10,11 @@ package com.michael.framework.exception;
  * @author michael
  */
 public class JdbcConfigurationException extends RuntimeException {
+    /**
+     *
+     */
+    private static final long serialVersionUID = 1L;
+
     public JdbcConfigurationException(String message) {
         super(message);
     }

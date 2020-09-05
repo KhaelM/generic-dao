@@ -11,7 +11,12 @@ package com.michael.framework;
  */
 public class NoIdAnnotationException extends RuntimeException {
 
-    public NoIdAnnotationException(Class clazz) {
+    /**
+     *
+     */
+    private static final long serialVersionUID = 1L;
+
+    public NoIdAnnotationException(Class<?> clazz) {
         super("La classe " + clazz.getName() + " ne contient pas l'annotation @Id");
     }
 }

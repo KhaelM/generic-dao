@@ -11,8 +11,13 @@ package com.michael.framework;
  */
 public class NotCachableException extends RuntimeException {
 
-    public NotCachableException(Class clazz) {
+    /**
+     *
+     */
+    private static final long serialVersionUID = 1L;
+
+    public NotCachableException(Class<?> clazz) {
         super("La classe " + clazz.getName() + " ne possède pas l'annotation @Cache.");
     }
-    
+
 }

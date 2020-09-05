@@ -16,7 +16,7 @@ public class CriteriaBuilder {
 
     private List<Criteria> criterias;
     private List<String> logicalOperators;
-    private Class clazz;
+    private Class<?> clazz;
     private static Pagination pagination;
 
     public Pagination getPagination() {
@@ -24,15 +24,15 @@ public class CriteriaBuilder {
     }
 
     public void setPagination(int page, int nombreResultat) {
-        if (this.pagination == null) {
-            this.pagination = new Pagination(page, nombreResultat);
+        if (CriteriaBuilder.pagination == null) {
+            CriteriaBuilder.pagination = new Pagination(page, nombreResultat);
         } else {
-            this.pagination.setNombreResultat(nombreResultat);
-            this.pagination.setPage(page);
+            CriteriaBuilder.pagination.setNombreResultat(nombreResultat);
+            CriteriaBuilder.pagination.setPage(page);
         }
     }
 
-    public CriteriaBuilder(Class clazz) {
+    public CriteriaBuilder(Class<?> clazz) {
         this.clazz = clazz;
         criterias = new ArrayList<Criteria>();
         logicalOperators = new ArrayList<String>();
@@ -51,7 +51,7 @@ public class CriteriaBuilder {
         return logicalOperators;
     }
 
-    public Class getClazz() {
+    public Class<?> getClazz() {
         return clazz;
     }
 }
