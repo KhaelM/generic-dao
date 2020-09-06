@@ -766,7 +766,11 @@ public final class GenericDao {
             ResultSetMetaData rsmd = resultSet.getMetaData();
             Map<String, Set<String>> tablesInvolved = getTablesInvolvedAndItsFields(rsmd);
 
+            if(!resultSet.next()) {
+                System.out.println("leleba");
+            }
             while (resultSet.next()) {
+                System.out.println("resu");
                 // Create an instance and set its field for each table in tablesInvolved, and
                 // eventually set the parent field container as the instance is the parent
                 // field value
@@ -774,6 +778,7 @@ public final class GenericDao {
                     String table = entry.getKey();
                     // Skip if Rownum
                     if (table.equalsIgnoreCase("RN")) {
+                        System.out.println("io");
                         continue;
                     }
                     InfoForLeftJoin matchingInfo = correspBetweenTableAndInfo.get(table);
@@ -847,6 +852,20 @@ public final class GenericDao {
                 for (Field field : manyToManyFields) {
                     ParameterizedType genericType = (ParameterizedType) field.getGenericType();
                     Class<?> genericTypeClass = (Class<?>) genericType.getActualTypeArguments()[0];
+                    Field mnyToManyFieldId = null;
+
+                    for (Field f : getAllFields(genericTypeClass)) {
+                        if (f.isAnnotationPresent(Id.class)) {
+                            mnyToManyFieldId = f;
+                            break;
+                        }
+                    }
+
+                    if (mnyToManyFieldId == null) {
+                        throw new RuntimeException("no Id found inside " + genericTypeClass);
+                    }
+
+                    mnyToManyFieldId.setAccessible(true);
 
                     // Avoid infinite recursion
                     if (genericTypeClass.equals(manyToManyParentClass)) {
@@ -865,7 +884,9 @@ public final class GenericDao {
 
                     directJoinSql = "JOIN " + this.dbCharacter + joinTable + this.dbCharacter + " ON "
                             + this.dbCharacter + joinTable + this.dbCharacter + "." + this.dbCharacter
-                            + inverseJoinColumn + this.dbCharacter;
+                            + inverseJoinColumn + this.dbCharacter + " = "
+                            + getClassTableName(genericTypeClass, this.dbCharacter) + "."
+                            + getFieldNameInDatabase(mnyToManyFieldId, this.dbCharacter);
                     List<?> list = select(connection, genericTypeClass, cb, directJoinSql, instanceClass);
                     field.setAccessible(true);
                     field.set(correspBetweenTableAndInfo.get(tableName.replaceAll(this.dbCharacter, "")).getInstance(),
@@ -876,6 +897,7 @@ public final class GenericDao {
             }
         } catch (IllegalAccessException | IllegalArgumentException | InstantiationException | NoSuchFieldException
                 | SecurityException | SQLException e) {
+            e.printStackTrace();
             throw e;
         } finally {
             if (resultSet != null) {
