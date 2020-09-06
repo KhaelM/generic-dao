@@ -18,6 +18,6 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 public @interface Table {
     String name();
-    boolean caseSensitive() default false;
+
     String sequence() default "";
 }

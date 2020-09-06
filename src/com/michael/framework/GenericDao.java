@@ -38,25 +38,13 @@ public final class GenericDao {
 
     private final String databaseId;
     private CriteriaBuilder criteriaBuilder;
-    private String dbCharacter;
 
-    private String getFieldNameInDatabase(Field field, String escapeCharacter) {
+    private String getFieldNameInDatabase(Field field) {
         String result = null;
         if (field.isAnnotationPresent(Column.class)) {
-            boolean escaped = ((Column) (field.getAnnotation(Column.class))).caseSensitive();
-            if (escaped) {
-                result = escapeCharacter + ((Column) (field.getAnnotation(Column.class))).name() + escapeCharacter;
-            } else {
-                result = ((Column) (field.getAnnotation(Column.class))).name();
-            }
+            result = ((Column) (field.getAnnotation(Column.class))).name();
         } else if (field.isAnnotationPresent(JoinColumn.class)) {
-            boolean escaped = ((JoinColumn) (field.getAnnotation(JoinColumn.class))).caseSensitive();
-            if (escaped) {
-                result = escapeCharacter + ((JoinColumn) (field.getAnnotation(JoinColumn.class))).name()
-                        + escapeCharacter;
-            } else {
-                result = ((JoinColumn) (field.getAnnotation(JoinColumn.class))).name();
-            }
+            result = ((JoinColumn) (field.getAnnotation(JoinColumn.class))).name();
         } else if (field.isAnnotationPresent(ManyToMany.class)) {
             result = ((ManyToMany) field.getAnnotation(ManyToMany.class)).joinColumn();
         } else {
@@ -65,15 +53,10 @@ public final class GenericDao {
         return result;
     }
 
-    private String getClassTableName(Class<?> classe, String escapeCharacter) {
+    private String getClassTableName(Class<?> classe) {
         String result = null;
         if (classe.isAnnotationPresent(Table.class)) {
-            boolean escaped = ((Table) (classe.getAnnotation(Table.class))).caseSensitive();
-            if (escaped) {
-                result = escapeCharacter + ((Table) (classe.getAnnotation(Table.class))).name() + escapeCharacter;
-            } else {
-                result = ((Table) (classe.getAnnotation(Table.class))).name();
-            }
+            result = ((Table) (classe.getAnnotation(Table.class))).name();
         } else {
             result = classe.getSimpleName();
         }
@@ -97,7 +80,7 @@ public final class GenericDao {
 
     public Object selectById(Object id) throws SQLException, InstantiationException, IllegalAccessException,
             IllegalArgumentException, InvocationTargetException, NoSuchFieldException {
-        String tableName = getClassTableName(criteriaBuilder.getClazz(), this.dbCharacter);
+        String tableName = getClassTableName(criteriaBuilder.getClazz());
         Field fieldHoldingId = getIdField(criteriaBuilder.getClazz());
         String idColumnName = fieldHoldingId.isAnnotationPresent(Column.class)
                 ? fieldHoldingId.getAnnotation(Column.class).name()
@@ -118,7 +101,7 @@ public final class GenericDao {
     private int delete(Connection connection, Object instance, String manualSql, Object[] psArgs)
             throws IllegalArgumentException, IllegalAccessException, SQLException {
         Class<?> classe = instance.getClass();
-        String tableName = getClassTableName(classe, this.dbCharacter);
+        String tableName = getClassTableName(classe);
         List<Field> fields = getAllFields(classe);
         Field fieldHoldingId = null;
         List<Field> oneToManyFields = new ArrayList<Field>();
@@ -139,7 +122,7 @@ public final class GenericDao {
             throw new RuntimeException("L'id de la classe" + classe.getName() + " doit être annoté par @Id");
         }
 
-        String fieldHoldingIdName = getFieldNameInDatabase(fieldHoldingId, this.dbCharacter);
+        String fieldHoldingIdName = getFieldNameInDatabase(fieldHoldingId);
         String sql = null;
         if (manualSql != null) {
             sql = manualSql;
@@ -224,7 +207,7 @@ public final class GenericDao {
             InvocationTargetException, NoSuchFieldException {
         Class<?> classe = instance.getClass();
 
-        String tableName = getClassTableName(classe, this.dbCharacter);
+        String tableName = getClassTableName(classe);
 
         List<Field> fields = getAllFields(classe);
         Field fieldHoldingId = null;
@@ -267,10 +250,10 @@ public final class GenericDao {
                 continue;
             }
             CriteriaBuilder cb = new CriteriaBuilder(manyToOneField.getType());
-            String embeddedFieldTableName = getClassTableName(manyToOneField.getType(), this.dbCharacter);
+            String embeddedFieldTableName = getClassTableName(manyToOneField.getType());
             Field fieldId = getIdField(manyToOneField.getType());
             fieldId.setAccessible(true);
-            String fieldNameInQuery = getFieldNameInDatabase(fieldId, this.dbCharacter);
+            String fieldNameInQuery = getFieldNameInDatabase(fieldId);
             cb.add(Restrictions.eq(embeddedFieldTableName, fieldNameInQuery, fieldId.get(manyToOneInstance)),
                     LogicalOperator.NONE);
             List<?> list = select(connection, manyToOneField.getType(), cb, null, null);
@@ -282,7 +265,7 @@ public final class GenericDao {
         String sql = "INSERT INTO " + tableName + " (";
         String sqlFieldName;
         for (int i = 0; i < syncFields.size(); i++) {
-            sqlFieldName = getFieldNameInDatabase(syncFields.get(i), this.dbCharacter);
+            sqlFieldName = getFieldNameInDatabase(syncFields.get(i));
             sql += sqlFieldName;
             if (i < syncFields.size() - 1) {
                 sql += ",";
@@ -292,7 +275,7 @@ public final class GenericDao {
         for (Field manyToOneField : manyToOneFields) {
             manyToOneField.setAccessible(true);
             if (manyToOneField.get(instance) != null) {
-                sqlFieldName = getFieldNameInDatabase(manyToOneField, this.dbCharacter);
+                sqlFieldName = getFieldNameInDatabase(manyToOneField);
                 sql += "," + sqlFieldName;
                 sql += ",";
             }
@@ -430,8 +413,9 @@ public final class GenericDao {
                 for (Object object : list) {
                     // Check if object exists in db
                     CriteriaBuilder tempCb = new CriteriaBuilder(genericTypeClass);
-                    tempCb.add(Restrictions.eq(getClassTableName(genericTypeClass, this.dbCharacter),
-                            getFieldNameInDatabase(mnyToManyFieldId, this.dbCharacter), mnyToManyFieldId.get(object)),
+                    tempCb.add(
+                            Restrictions.eq(getClassTableName(genericTypeClass),
+                                    getFieldNameInDatabase(mnyToManyFieldId), mnyToManyFieldId.get(object)),
                             LogicalOperator.NONE);
                     if (select(connection, genericTypeClass, tempCb, null, null).isEmpty()) {
                         prepArgs[1] = insert(connection, object, null, null);
@@ -466,7 +450,7 @@ public final class GenericDao {
             throws SQLException, IllegalArgumentException, IllegalAccessException {
         Class<?> classe = instance.getClass();
 
-        String tableName = getClassTableName(classe, this.dbCharacter);
+        String tableName = getClassTableName(classe);
 
         String sql = "UPDATE " + tableName + " SET ";
 
@@ -497,7 +481,7 @@ public final class GenericDao {
 
         String sqlFieldName;
         for (int i = 0; i < syncFields.size(); i++) {
-            sqlFieldName = getFieldNameInDatabase(syncFields.get(i), this.dbCharacter);
+            sqlFieldName = getFieldNameInDatabase(syncFields.get(i));
             sql += sqlFieldName + " = ?";
             if (i < syncFields.size() - 1) {
                 sql += ", ";
@@ -512,7 +496,7 @@ public final class GenericDao {
             sql = sql.substring(0, sql.length() - 1);
         }
 
-        String idColumnName = getFieldNameInDatabase(fieldHoldingId, this.dbCharacter);
+        String idColumnName = getFieldNameInDatabase(fieldHoldingId);
         sql += " WHERE " + idColumnName + " = ?";
 
         System.out.println(sql);
@@ -592,24 +576,11 @@ public final class GenericDao {
         }
 
         this.databaseId = id;
-        setDatabaseSpecialCharacter();
     }
 
     public CriteriaBuilder getCriteriaBuilder(Class<?> clazz) {
         this.criteriaBuilder = new CriteriaBuilder(clazz);
         return this.criteriaBuilder;
-    }
-
-    private void setDatabaseSpecialCharacter() {
-        DatabaseInformation dbInfo = jdbcFactory.getDatabasesInformations().get(databaseId);
-        String database = dbInfo.getUrl().split(":")[1];
-        if (database.equalsIgnoreCase("mysql") || database.equalsIgnoreCase("mariadb")) {
-            this.dbCharacter = "`";
-        } else if (database.equalsIgnoreCase("oracle") || database.equalsIgnoreCase("postgresql")) {
-            this.dbCharacter = "\"";
-        } else {
-            throw new RuntimeException("Base de donnée non supportée");
-        }
     }
 
     public Connection getConnection() throws SQLException {
@@ -625,7 +596,7 @@ public final class GenericDao {
             IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchFieldException {
         Class<?> classe = instanceClass;
         List<Object> result = new ArrayList<Object>();
-        String tableName = getClassTableName(classe, this.dbCharacter);
+        String tableName = getClassTableName(classe);
         String sql = "SELECT ";
 
         boolean paginationOn = criteriaBuilder.getPagination() != null;
@@ -680,8 +651,7 @@ public final class GenericDao {
             if (syncFields.get(i).isAnnotationPresent(Id.class)) {
                 sql += "distinct ";
             }
-            sql += tableName + "." + sqlFieldName + " as " + this.dbCharacter + tableNameNotEscaped + "." + sqlFieldName
-                    + this.dbCharacter;
+            sql += tableName + "." + sqlFieldName + " as \"" + tableNameNotEscaped + "." + sqlFieldName + "\"";
             if (i < syncFields.size() - 1) {
                 sql += ", ";
             }
@@ -714,8 +684,7 @@ public final class GenericDao {
         }
 
         Map<String, InfoForLeftJoin> correspBetweenTableAndInfo = new HashMap<String, InfoForLeftJoin>();
-        correspBetweenTableAndInfo.put(tableName.replaceAll(this.dbCharacter, ""),
-                new InfoForLeftJoin(classe, null, null, null));
+        correspBetweenTableAndInfo.put(tableName, new InfoForLeftJoin(classe, null, null, null));
 
         StringBuilder sb = new StringBuilder(1000);
         sb.append(sql);
@@ -766,7 +735,7 @@ public final class GenericDao {
             ResultSetMetaData rsmd = resultSet.getMetaData();
             Map<String, Set<String>> tablesInvolved = getTablesInvolvedAndItsFields(rsmd);
 
-            if(!resultSet.next()) {
+            if (!resultSet.next()) {
                 System.out.println("leleba");
             }
             while (resultSet.next()) {
@@ -835,18 +804,16 @@ public final class GenericDao {
                     Field embeddedField = genericTypeClass
                             .getDeclaredField(field.getAnnotation(OneToMany.class).mappedBy());
                     fieldHoldingId.setAccessible(true);
-                    String embeddedFieldTableName = getClassTableName(genericTypeClass, this.dbCharacter);
+                    String embeddedFieldTableName = getClassTableName(genericTypeClass);
                     // WHERE embeddedFieldTableName.getFieldNameInDatabase(embeddedField,
                     // this.dbCharacter) =
                     // fieldHoldingId.get(correspBetweenTableAndInfo.get(tableName).getInstance())
-                    cb.add(Restrictions.eq(embeddedFieldTableName,
-                            getFieldNameInDatabase(embeddedField, this.dbCharacter),
+                    cb.add(Restrictions.eq(embeddedFieldTableName, getFieldNameInDatabase(embeddedField),
                             fieldHoldingId.get(correspBetweenTableAndInfo.get(tableName).getInstance())),
                             LogicalOperator.NONE);
                     List<?> list = select(connection, genericTypeClass, cb, null, null);
                     field.setAccessible(true);
-                    field.set(correspBetweenTableAndInfo.get(tableName.replaceAll(this.dbCharacter, "")).getInstance(),
-                            list);
+                    field.set(correspBetweenTableAndInfo.get(tableName).getInstance(), list);
                 }
 
                 for (Field field : manyToManyFields) {
@@ -882,18 +849,14 @@ public final class GenericDao {
                             fieldHoldingId.get(correspBetweenTableAndInfo.get(tableName).getInstance())),
                             LogicalOperator.NONE);
 
-                    directJoinSql = "JOIN " + this.dbCharacter + joinTable + this.dbCharacter + " ON "
-                            + this.dbCharacter + joinTable + this.dbCharacter + "." + this.dbCharacter
-                            + inverseJoinColumn + this.dbCharacter + " = "
-                            + getClassTableName(genericTypeClass, this.dbCharacter) + "."
-                            + getFieldNameInDatabase(mnyToManyFieldId, this.dbCharacter);
+                    directJoinSql = "JOIN " + joinTable + " ON " + joinTable + "." + inverseJoinColumn + " = "
+                            + getClassTableName(genericTypeClass) + "." + getFieldNameInDatabase(mnyToManyFieldId);
                     List<?> list = select(connection, genericTypeClass, cb, directJoinSql, instanceClass);
                     field.setAccessible(true);
-                    field.set(correspBetweenTableAndInfo.get(tableName.replaceAll(this.dbCharacter, "")).getInstance(),
-                            list);
+                    field.set(correspBetweenTableAndInfo.get(tableName).getInstance(), list);
                 }
 
-                result.add(correspBetweenTableAndInfo.get(tableName.replaceAll(this.dbCharacter, "")).getInstance());
+                result.add(correspBetweenTableAndInfo.get(tableName).getInstance());
             }
         } catch (IllegalAccessException | IllegalArgumentException | InstantiationException | NoSuchFieldException
                 | SecurityException | SQLException e) {
@@ -963,13 +926,12 @@ public final class GenericDao {
     }
 
     private String getFieldSqlManyToOne(Class<?> clazz, String sql) {
-        String tableName = getClassTableName(clazz, this.dbCharacter);
+        String tableName = getClassTableName(clazz);
         for (Field field : getAllFields(clazz)) {
             if (!field.isAnnotationPresent(Transient.class) && !field.isAnnotationPresent(OneToMany.class)
                     && !field.isAnnotationPresent(ManyToOne.class) && !field.isAnnotationPresent(ManyToMany.class)) {
-                String fieldName = getFieldNameInDatabase(field, this.dbCharacter);
-                sql += tableName + "." + fieldName + " as " + this.dbCharacter + tableName + "." + field.getName()
-                        + this.dbCharacter + ",";
+                String fieldName = getFieldNameInDatabase(field);
+                sql += tableName + "." + fieldName + " as " + "\"" + tableName + "." + field.getName() + "\",";
             }
             if (field.isAnnotationPresent(ManyToOne.class)) {
                 sql = getFieldSqlManyToOne(field.getType(), sql);
@@ -981,24 +943,24 @@ public final class GenericDao {
     private StringBuilder getLeftJoinSql(Class<?> clazz, StringBuilder sql, Map<String, InfoForLeftJoin> info)
             throws InstantiationException, IllegalAccessException {
         String manyToOneTableName;
-        String tableName = getClassTableName(clazz, this.dbCharacter);
+        String tableName = getClassTableName(clazz);
         List<Field> allFields = getAllFields(clazz);
 
         for (Field field : allFields) {
             if (field.isAnnotationPresent(ManyToOne.class)) {
                 InfoForLeftJoin temp = new InfoForLeftJoin(field.getType(), null, null, field);
-                manyToOneTableName = getClassTableName(field.getType(), this.dbCharacter);
+                manyToOneTableName = getClassTableName(field.getType());
                 info.put(manyToOneTableName, temp);
                 if (!field.isAnnotationPresent(JoinColumn.class)) {
                     throw new RuntimeException("Vous avez oublié d'annoter l'attribut " + field.getName()
                             + " de la classe " + clazz + " avec @JoinColumn");
                 }
-                String fieldName = getFieldNameInDatabase(field, this.dbCharacter);
+                String fieldName = getFieldNameInDatabase(field);
                 sql.append(" LEFT JOIN ").append(manyToOneTableName).append(" ON ").append(tableName).append(".")
                         .append(fieldName).append(" = ").append(manyToOneTableName).append(".");
                 for (Field subField : getAllFields(field.getType())) {
                     if (subField.isAnnotationPresent(Id.class)) {
-                        String subFieldName = getFieldNameInDatabase(subField, this.dbCharacter);
+                        String subFieldName = getFieldNameInDatabase(subField);
                         sql.append(subFieldName);
                     }
                     if (subField.isAnnotationPresent(JoinColumn.class)
