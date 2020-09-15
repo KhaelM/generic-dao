@@ -89,7 +89,7 @@ public final class GenericDao {
         Connection c = getConnection();
         try {
             List<Object> objects = select(c, criteriaBuilder.getClazz(), criteriaBuilder, null, null);
-            if(objects.isEmpty()) {
+            if (objects.isEmpty()) {
                 return null;
             }
             return objects.get(0);
@@ -151,8 +151,6 @@ public final class GenericDao {
             Class<?> genericTypeClass = (Class<?>) genericType.getActualTypeArguments()[0];
             String joinTable = ((ManyToMany) manyToManyField.getAnnotation(ManyToMany.class)).joinTable();
             String joinColumn = ((ManyToMany) manyToManyField.getAnnotation(ManyToMany.class)).joinColumn();
-            String inverseJoinColumn = ((ManyToMany) manyToManyField.getAnnotation(ManyToMany.class))
-                    .inverseJoinColumn();
 
             Field mnyToManyFieldId = null;
 
@@ -170,10 +168,9 @@ public final class GenericDao {
             manyToManyField.setAccessible(true);
             mnyToManyFieldId.setAccessible(true);
             fieldHoldingId.setAccessible(true);
-            List<?> list = (List<?>) manyToManyField.get(instance);
             String manSql = "DELETE FROM " + joinTable + " WHERE " + joinTable + "." + joinColumn + " = ?";
             PreparedStatement mnyMnyPs = connection.prepareStatement(manSql);
-            mnyMnyPs.setObject(1, fieldHoldingId.get(instance));  
+            mnyMnyPs.setObject(1, fieldHoldingId.get(instance));
             mnyMnyPs.executeUpdate();
         }
 
@@ -517,7 +514,7 @@ public final class GenericDao {
         for (Field manyToOneField : manyToOneFields) {
             manyToOneField.setAccessible(true);
             Object manyToOneInstance = manyToOneField.get(instance);
-            if(manyToOneInstance != null) {
+            if (manyToOneInstance != null) {
                 update(connection, manyToOneField.get(instance));
             }
         }
