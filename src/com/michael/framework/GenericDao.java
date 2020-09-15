@@ -88,7 +88,11 @@ public final class GenericDao {
         criteriaBuilder.add(Restrictions.eq(tableName, idColumnName, id), LogicalOperator.NONE);
         Connection c = getConnection();
         try {
-            return select(c, criteriaBuilder.getClazz(), criteriaBuilder, null, null).get(0);
+            List<Object> objects = select(c, criteriaBuilder.getClazz(), criteriaBuilder, null, null);
+            if(objects.isEmpty()) {
+                return null;
+            }
+            return objects.get(0);
         } catch (SQLException | InstantiationException | IllegalAccessException | IllegalArgumentException
                 | InvocationTargetException | NoSuchFieldException e) {
             throw e;
@@ -167,16 +171,10 @@ public final class GenericDao {
             mnyToManyFieldId.setAccessible(true);
             fieldHoldingId.setAccessible(true);
             List<?> list = (List<?>) manyToManyField.get(instance);
-            String manSql = "DELETE FROM " + joinTable + " WHERE " + joinTable + "." + joinColumn + " = ? AND "
-                    + joinTable + "." + inverseJoinColumn + " = ?";
-            Object[] prepArgs = new Object[2];
-            prepArgs[0] = fieldHoldingId.get(instance);
-            if (list != null) {
-                for (Object object : list) {
-                    prepArgs[1] = mnyToManyFieldId.get(object);
-                    delete(connection, object, manSql, prepArgs);
-                }
-            }
+            String manSql = "DELETE FROM " + joinTable + " WHERE " + joinTable + "." + joinColumn + " = ?";
+            PreparedStatement mnyMnyPs = connection.prepareStatement(manSql);
+            mnyMnyPs.setObject(1, fieldHoldingId.get(instance));  
+            mnyMnyPs.executeUpdate();
         }
 
         PreparedStatement ps = connection.prepareStatement(sql);
@@ -518,7 +516,10 @@ public final class GenericDao {
         preparedStatement.executeUpdate();
         for (Field manyToOneField : manyToOneFields) {
             manyToOneField.setAccessible(true);
-            update(connection, manyToOneField.get(instance));
+            Object manyToOneInstance = manyToOneField.get(instance);
+            if(manyToOneInstance != null) {
+                update(connection, manyToOneField.get(instance));
+            }
         }
 
         for (Field oneToManyField : oneToManyFields) {
@@ -735,11 +736,7 @@ public final class GenericDao {
             ResultSetMetaData rsmd = resultSet.getMetaData();
             Map<String, Set<String>> tablesInvolved = getTablesInvolvedAndItsFields(rsmd);
 
-            if (!resultSet.next()) {
-                System.out.println("leleba");
-            }
             while (resultSet.next()) {
-                System.out.println("resu");
                 // Create an instance and set its field for each table in tablesInvolved, and
                 // eventually set the parent field container as the instance is the parent
                 // field value
@@ -747,7 +744,6 @@ public final class GenericDao {
                     String table = entry.getKey();
                     // Skip if Rownum
                     if (table.equalsIgnoreCase("RN")) {
-                        System.out.println("io");
                         continue;
                     }
                     InfoForLeftJoin matchingInfo = correspBetweenTableAndInfo.get(table);
@@ -913,6 +909,7 @@ public final class GenericDao {
         } catch (IllegalArgumentException e) {
             throw e;
         } finally {
+            this.criteriaBuilder = null;
             c.close();
         }
     }
