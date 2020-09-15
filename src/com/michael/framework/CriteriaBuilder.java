@@ -17,18 +17,18 @@ public class CriteriaBuilder {
     private List<Criteria> criterias;
     private List<String> logicalOperators;
     private Class<?> clazz;
-    private static Pagination pagination;
+    private Pagination pagination;
 
     public Pagination getPagination() {
         return pagination;
     }
 
     public void setPagination(int page, int nombreResultat) {
-        if (CriteriaBuilder.pagination == null) {
-            CriteriaBuilder.pagination = new Pagination(page, nombreResultat);
+        if (this.pagination == null) {
+            this.pagination = new Pagination(page, nombreResultat);
         } else {
-            CriteriaBuilder.pagination.setNombreResultat(nombreResultat);
-            CriteriaBuilder.pagination.setPage(page);
+            this.pagination.setNombreResultat(nombreResultat);
+            this.pagination.setPage(page);
         }
     }
 
