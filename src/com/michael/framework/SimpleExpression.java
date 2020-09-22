@@ -15,6 +15,10 @@ class SimpleExpression implements Criteria {
     private final String operator;
     private final String tableName;
 
+    public String getOperator() {
+        return operator;
+    }
+
     public SimpleExpression(String tableName, String propertyName, Object value, String operator) {
         this.propertyName = propertyName;
         this.value = value;
