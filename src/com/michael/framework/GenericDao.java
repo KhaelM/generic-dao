@@ -90,7 +90,7 @@ public final class GenericDao {
         Connection c = getConnection();
         try {
             List<Object> objects = select(c, criteriaBuilder.getClazz(), criteriaBuilder, null, null);
-            if(objects.isEmpty()) {
+            if (objects.isEmpty()) {
                 return null;
             }
             return objects.get(0);
@@ -152,8 +152,6 @@ public final class GenericDao {
             Class<?> genericTypeClass = (Class<?>) genericType.getActualTypeArguments()[0];
             String joinTable = ((ManyToMany) manyToManyField.getAnnotation(ManyToMany.class)).joinTable();
             String joinColumn = ((ManyToMany) manyToManyField.getAnnotation(ManyToMany.class)).joinColumn();
-            String inverseJoinColumn = ((ManyToMany) manyToManyField.getAnnotation(ManyToMany.class))
-                    .inverseJoinColumn();
 
             Field mnyToManyFieldId = null;
 
@@ -171,10 +169,9 @@ public final class GenericDao {
             manyToManyField.setAccessible(true);
             mnyToManyFieldId.setAccessible(true);
             fieldHoldingId.setAccessible(true);
-            List<?> list = (List<?>) manyToManyField.get(instance);
             String manSql = "DELETE FROM " + joinTable + " WHERE " + joinTable + "." + joinColumn + " = ?";
             PreparedStatement mnyMnyPs = connection.prepareStatement(manSql);
-            mnyMnyPs.setObject(1, fieldHoldingId.get(instance));  
+            mnyMnyPs.setObject(1, fieldHoldingId.get(instance));
             mnyMnyPs.executeUpdate();
         }
 
@@ -522,7 +519,7 @@ public final class GenericDao {
         for (Field manyToOneField : manyToOneFields) {
             manyToOneField.setAccessible(true);
             Object manyToOneInstance = manyToOneField.get(instance);
-            if(manyToOneInstance != null) {
+            if (manyToOneInstance != null) {
                 update(connection, manyToOneField.get(instance));
             }
         }
@@ -732,16 +729,16 @@ public final class GenericDao {
                 criteria = criteriaBuilder.getCriterias().get(i);
                 if (criteria instanceof SimpleExpression) {
                     SimpleExpression se = (SimpleExpression) criteria;
-                    if(se.getOperator() == "LIKE") {
-                        ps.setObject(index++, "%"+(String.valueOf(se.getValue()))+"%");
+                    if (se.getOperator() == "LIKE") {
+                        ps.setObject(index++, "%" + (String.valueOf(se.getValue())) + "%");
                     } else {
                         ps.setObject(index++, se.getValue());
                     }
                 } else if (criteria instanceof IntervalExpression) {
                     IntervalExpression ie = (IntervalExpression) criteria;
-                    if(ie.getMin() instanceof java.util.Date) {
-                        Date min = (java.util.Date)ie.getMin();
-                        Date max = (java.util.Date)ie.getMax();
+                    if (ie.getMin() instanceof java.util.Date) {
+                        Date min = (java.util.Date) ie.getMin();
+                        Date max = (java.util.Date) ie.getMax();
                         ps.setDate(index++, new java.sql.Date(min.getTime()));
                         ps.setDate(index++, new java.sql.Date(max.getTime()));
                     } else {
