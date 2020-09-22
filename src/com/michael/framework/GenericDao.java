@@ -19,6 +19,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -360,9 +361,13 @@ public final class GenericDao {
 
         if (generatedKeyResultSet.next()) {
             try {
-                generatedKey = ((BigDecimal) generatedKeyResultSet.getObject(1)).intValue();
+                generatedKey = ((Integer) generatedKeyResultSet.getObject(1)).intValue();
             } catch (ClassCastException e) {
-                generatedKey = ((BigInteger) generatedKeyResultSet.getObject(1)).intValue();
+                try {
+                    generatedKey = ((BigDecimal) generatedKeyResultSet.getObject(1)).intValue();
+                } catch (ClassCastException ex) {
+                    generatedKey = ((BigInteger) generatedKeyResultSet.getObject(1)).intValue();
+                }
             }
             fieldHoldingId.setAccessible(true);
             fieldHoldingId.set(instance, generatedKey);
@@ -726,10 +731,23 @@ public final class GenericDao {
             for (int i = 0; i < criteriaBuilder.getCriterias().size(); i++) {
                 criteria = criteriaBuilder.getCriterias().get(i);
                 if (criteria instanceof SimpleExpression) {
-                    ps.setObject(index++, ((SimpleExpression) criteria).getValue());
+                    SimpleExpression se = (SimpleExpression) criteria;
+                    if(se.getOperator() == "LIKE") {
+                        ps.setObject(index++, "%"+(String.valueOf(se.getValue()))+"%");
+                    } else {
+                        ps.setObject(index++, se.getValue());
+                    }
                 } else if (criteria instanceof IntervalExpression) {
-                    ps.setObject(index++, ((IntervalExpression) criteria).getMin());
-                    ps.setObject(index++, ((IntervalExpression) criteria).getMax());
+                    IntervalExpression ie = (IntervalExpression) criteria;
+                    if(ie.getMin() instanceof java.util.Date) {
+                        Date min = (java.util.Date)ie.getMin();
+                        Date max = (java.util.Date)ie.getMax();
+                        ps.setDate(index++, new java.sql.Date(min.getTime()));
+                        ps.setDate(index++, new java.sql.Date(max.getTime()));
+                    } else {
+                        ps.setObject(index++, ie.getMin());
+                        ps.setObject(index++, ie.getMax());
+                    }
                 }
             }
             resultSet = ps.executeQuery();
